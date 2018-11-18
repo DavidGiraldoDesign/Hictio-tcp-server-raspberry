@@ -26,5 +26,8 @@
 	<classpathentry kind="lib" path="music/mp3spi1.9.5.jar"/>
 	<classpathentry kind="lib" path="music/tritonus_aos.jar"/>
 	<classpathentry kind="lib" path="music/tritonus_share.jar"/>
+	<classpathentry kind="lib" path="pi4j/pi4j-core.jar"/>
+	<classpathentry kind="lib" path="pi4j/pi4j-device.jar"/>
+	<classpathentry kind="lib" path="pi4j/pi4j-gpio-extension.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

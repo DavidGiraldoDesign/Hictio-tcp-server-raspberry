@@ -10,13 +10,11 @@ import java.util.Observable;
 
 public class ClientAttention extends Observable implements Runnable {
 
-	// Socket that writes and read, it conects the client to the server
+	// Socket that writes and read, it connects the client to the server
 	private Socket socket_atention;
 	private boolean online;
 	private int id;
 	private String UID;
-	//private int fishId;
-	//private boolean onFish = false;
 
 	public ClientAttention(Socket reference, int id) {
 		this.socket_atention = reference;
@@ -25,32 +23,6 @@ public class ClientAttention extends Observable implements Runnable {
 		answerClientRequest();
 	}
 
-	/*/ ---------------------------------------------------
-	public int getFishId() {
-		return fishId;
-	}
-
-	public void setFishId(int fishId) {
-		this.fishId = fishId;
-	}
-
-	public boolean isOnFish() {
-		return this.onFish;
-	}
-
-	public void setOnFish(boolean onFish) {
-		this.onFish = onFish;
-	}
-
-	private void disconnectFish(String val) {
-		if (val.contains("out")) {
-			this.fishId = 0;
-			this.onFish = false;
-			System.out.println("Client: " + this.getId() + " Out fish!");
-		}
-	}
-
-	/*/
 	public String getUID() {
 		return UID;
 	}
@@ -74,7 +46,6 @@ public class ClientAttention extends Observable implements Runnable {
 				e.printStackTrace();
 			}
 		}
-
 	}
 
 	private void answerClientRequest() {
@@ -84,7 +55,6 @@ public class ClientAttention extends Observable implements Runnable {
 			input = new DataInputStream(socket_atention.getInputStream());
 			String request = input.readUTF();
 			this.UID = request;
-
 			sendString("acuario");//Server send the space where the interaction takes place.
 			System.out.println("Connection accepted for user UID: "+request);
 
@@ -97,9 +67,7 @@ public class ClientAttention extends Observable implements Runnable {
 	private void disconnect_client(DataInput input) {
 		setChanged();
 		System.err.println("=============================");
-		System.err.println("=============================");
 		System.err.println("Connection lost with:" + id);
-		System.err.println("=============================");
 		System.err.println("=============================");
 		this.online = false;
 		try {
@@ -117,9 +85,7 @@ public class ClientAttention extends Observable implements Runnable {
 		DataInputStream input = null;
 		try {
 			input = new DataInputStream(socket_atention.getInputStream());
-			// int val = Integer.parseInt(input.readUTF());
 			String val = input.readUTF();
-			//disconnectFish(val);
 			setChanged();
 			notifyObservers(val);
 			clearChanged();
@@ -134,13 +100,9 @@ public class ClientAttention extends Observable implements Runnable {
 			DataOutputStream output = new DataOutputStream(socket_atention.getOutputStream());
 			output.writeUTF(message);
 			System.out.println("Message: " + message + " / send to client: " + this.id);
-			// =========================
 			output.flush();
-			// =========================
-			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
 }

@@ -36,7 +36,7 @@ public class MainServer extends PApplet { // Main have to extend from Processing
 	
 	@Override
 		public void keyPressed() {
-			l.keyPressed();
+			//l.keyPressed();
 		}
 
 	@Override

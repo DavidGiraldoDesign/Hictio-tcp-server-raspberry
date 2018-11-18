@@ -1,0 +1,133 @@
+package server;
+
+import java.util.Observable;
+import java.util.Observer;
+import ddf.minim.AudioPlayer;
+import ddf.minim.Minim;
+
+//import processing.core.*;
+
+public class Logic implements Observer {
+	/**
+	 * Notas de martes 18 de septiembre de 2018 - 9pm Se agregó processing
+	 * Serial para recibir 0,1y2 del Arduino. cada numero manda al cliente
+	 * conetado, cabeza, cuerpo, cola respectivamente.
+	 **/
+	/**
+	 * Notas de martes 25 de septiembre de 2018 - 4:50 pm Se agregó comunicacion
+	 * con Makey Makey, para leer 9 caracteres.
+	 **/
+	/**
+	 * Notas de sábado 29 de septiembre de 2018 - 4:47 pm, se agregó Audio en el
+	 * servidor para localizarlo dentro de una habitación. Usando Minim
+	 */
+	/**
+	 * Notas de sábado 6 de octubre de 2018, se revincula la comuniacion serial
+	 * con Arduino. Esperanod recibir un ID unico (UID) de una tarjeta NFC. La
+	 * clase ClientAttention tendrá una variable UID vinuclada, proviniente del
+	 * cliente que se conecte.
+	 */
+	/**
+	 * Notas de domingo 18 de noviembre de 2018, a partir de aquí este codigo
+	 * estará corriendo en una raspeberry. su ip se obtiene con el comando
+	 * terminal "sudo if config" en el campo wlan0: inet 192.#.#.#.
+	 * **/
+	// =================================== Using Minim
+	private MainServer p;
+	private Minim minim;
+	private AudioPlayer beep;
+	// =================================== Using a PCD
+	private boolean allowTouchPCD = false;
+	private int timeToAllowTouch = 0;
+	private String PCDClient = "";
+	// =================================== SerialCom
+	private SerialCom serialCom;
+	// =================================== Data
+	private char[] fishKeys = { 'h', 'm', 't' };
+	private String fishName = "oscar";
+
+	public Logic(MainServer p) {
+		this.p = p;
+		this.minim = new Minim(p);
+		p.frameRate = 30;
+		beep = minim.loadFile("music/Beep_Short.mp3");
+		Server.getInstance(this, 5000);
+
+		this.serialCom = new SerialCom();
+		new Thread(serialCom).start();
+		this.serialCom.addObserver(this);
+	}
+
+	int seconds(int s) {
+		return 30 * s;
+	}
+
+	public void execute() {
+		p.background(255);
+		if (allowTouchPCD == true) {
+			timeToAllowTouch++;
+			if (timeToAllowTouch >= seconds(10)) {
+				allowTouchPCD = false;
+				PCDClient = "";
+				System.out.println("allowTouchPCD_A: " + allowTouchPCD);
+				System.out.println("PCDClient: " + PCDClient);
+
+			}
+		}
+
+	}
+
+	// Play beep
+	private void play(AudioPlayer a) {
+		a.play();
+		if (a.position() >= 800) {
+			a.rewind();
+		}
+	}
+
+	@Override
+	public void update(Observable o, Object arg) {
+		if (arg instanceof String) {
+			String msn = ((String) arg);
+			if (msn.contains("haptic")) {
+
+				this.play(beep);
+
+			} else if (msn.contains("PC")) {
+				timeToAllowTouch = 0;
+
+				try {
+					if (allowTouchPCD == false) {
+						allowTouchPCD = Boolean
+								.parseBoolean(msn.split("-")[1]);
+						PCDClient = msn.split("-")[2];
+						Server.getInstance(this, 5000).confirmInteractionStop(
+								PCDClient);
+						System.out.println("allowTouchPCD: "
+								+ allowTouchPCD);
+						System.out.println("PCDClient: " + PCDClient);
+
+					} else {
+
+					}
+
+				} catch (ArrayIndexOutOfBoundsException e) {
+					this.allowTouchPCD = false;
+				}
+			}
+		}
+
+	}
+	
+//Change this code with digital GPIO pins
+//	public void keyPressed() {
+//		Server.getInstance(this, 5000).sendFakeBeacon(p.key);
+//	}
+	
+
+	public void shotdown() {
+		System.out.println("ShotDown");
+		Server.getInstance(this, 5000).closeServer();
+	}
+
+}

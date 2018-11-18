@@ -15,7 +15,7 @@ public class SerialCom extends Observable implements Runnable {
 
 	public SerialCom() {
 		for (int i = 0; i < SerialPort.getCommPorts().length; i++) {
-			System.out.println("Port:"+ SerialPort.getCommPorts()[i]);
+			System.out.println("Port:" + SerialPort.getCommPorts()[i]);
 		}
 		this.comPort = SerialPort.getCommPorts()[0];
 	}
@@ -24,26 +24,19 @@ public class SerialCom extends Observable implements Runnable {
 	public void run() {
 		while (true) {
 			comPort.openPort();
-			comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 50, 0);
+			comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING,
+					50, 0);
 			this.in = comPort.getInputStream();
-
 			while (comPort.bytesAvailable() == 0)
-
-			
 				try {
-					
 					Thread.sleep(1);
-
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-
-
 			if (comPort.bytesAvailable() > 0) {
 				for (int i = 0; i < 8; i++) {
 					try {
 						this.sensorCardUID += ((char) in.read());
-				
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -53,11 +46,7 @@ public class SerialCom extends Observable implements Runnable {
 				clearChanged();
 				this.sensorCardUID = "";
 			}
-
 			comPort.closePort();
-
 		}
-
 	}
-
 }

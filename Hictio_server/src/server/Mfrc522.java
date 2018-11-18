@@ -1,0 +1,16 @@
+package server;
+
+public class Mfrc522 {
+	
+	private boolean isNewTagPresent = false;
+	private String fishes;
+	
+
+	public Mfrc522 (String fishes){
+		this.fishes=fishes;
+	}
+	
+	
+
+}
+	

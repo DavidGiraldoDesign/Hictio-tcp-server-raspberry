@@ -4,64 +4,93 @@ import java.util.Observable;
 import java.util.Observer;
 import ddf.minim.AudioPlayer;
 import ddf.minim.Minim;
+import com.pi4j.io.gpio.*;
+import com.pi4j.io.gpio.event.GpioPinDigitalStateChangeEvent;
+import com.pi4j.io.gpio.event.GpioPinListenerDigital;
+
 //import processing.core.*;
 
 public class Logic implements Observer {
-
 	/**
-	 * Notas de martes 18 de 2018 - 9pm Se agregó processing Serial para recibir
-	 * 0,1y2 del Arduino. cada numero manda al cliente conetado, cabeza, cuerpo,
-	 * cola respectivamente.
+	 * Notas de martes 18 de septiembre de 2018 - 9pm Se agregó processing
+	 * Serial para recibir 0,1y2 del Arduino. cada numero manda al cliente
+	 * conetado, cabeza, cuerpo, cola respectivamente.
 	 **/
 	/**
-	 * Notas de martes 25 de 2018 - 4:50 pm Se agregó comunicacion con Makey Makey,
-	 * para leer 9 caracteres.
+	 * Notas de martes 25 de septiembre de 2018 - 4:50 pm Se agregó comunicacion
+	 * con Makey Makey, para leer 9 caracteres.
 	 **/
 	/**
-	 * Notas de sábado 29 de 2018 - 4:47 pm, se agregó Audio en el servidor para
-	 * localizarlo dentro de una habitación. Usando Minim
+	 * Notas de sábado 29 de septiembre de 2018 - 4:47 pm, se agregó Audio en el
+	 * servidor para localizarlo dentro de una habitación. Usando Minim
 	 */
 	/**
-	 * Notas de sábado 6 de octubre de 2018, se revincula la comuniacion serial con
-	 * Arduino. Esperanod recibir un ID unico (UID) de una tarjeta NFC. La clase
-	 * ClientAttention tendrá una variable UID vinuclada, proviniente del cliente
-	 * que se conecte.
+	 * Notas de sábado 6 de octubre de 2018, se revincula la comuniacion serial
+	 * con Arduino. Esperanod recibir un ID unico (UID) de una tarjeta NFC. La
+	 * clase ClientAttention tendrá una variable UID vinuclada, proviniente del
+	 * cliente que se conecte.
 	 */
-
-	// =========================================== Using Minim
+	/**
+	 * Notas de domingo 18 de noviembre de 2018, a partir de aquí este codigo
+	 * estará corriendo en una raspeberry. su ip se obtiene con el comando
+	 * terminal "sudo if config" en el campo wlan0: inet 192.#.#.#.
+	 * **/
+	// =================================== Using Minim
 	private MainServer p;
 	private Minim minim;
 	private AudioPlayer beep;
-	// ================================================= Using a PCD
-	private boolean allowTouchPCD_A = false;
-	private int timerToAllowTouch = 0;
+	// =================================== Using a PCD
+	private boolean allowTouchPCD = false;
+	private int timeToAllowTouch = 0;
 	private String PCDClient = "";
-
-	private char[][] fishKeys = { { 'w', 'a', 's' }, { 'd', 'f', 'g' } };
-	private String[] fishNames = { "oscar", "piranha", "ghost" };
+	// =================================== SerialCom
+	private SerialCom serialCom;
+	// ==================================== GPIO Contoler
+	final GpioController gpio = GpioFactory.getInstance();
+	final GpioPinDigitalInput button = gpio.provisionDigitalInputPin(
+			PiWedge.G4.pin(), "button", PinPullResistance.PULL_UP);
+	// =================================== Data
+	private char[] fishKeys = { 'h', 'm', 't' };
+	private String fishName = "oscar";
 
 	public Logic(MainServer p) {
 		this.p = p;
 		this.minim = new Minim(p);
+		p.frameRate = 30;
 		beep = minim.loadFile("music/Beep_Short.mp3");
 		Server.getInstance(this, 5000);
+
+		this.serialCom = new SerialCom();
+		new Thread(serialCom).start();
+		this.serialCom.addObserver(this);
+
+		button.setShutdownOptions(true);
+		button.addListener(new GpioPinListenerDigital() {
+			
+			@Override
+			public void handleGpioPinDigitalStateChangeEvent(
+					GpioPinDigitalStateChangeEvent event) {
+				// TODO Auto-generated method stub
+				System.out.println("--> GPIO pin state: "+event.getPin() + " = "+event.getState());
+				
+			}
+		});
 	}
 
 	int seconds(int s) {
-		return 60 * s;
+		return 30 * s;
 	}
 
 	public void execute() {
-		//System.out.println(timerToAllowTouch+ " >= "+seconds(10));
 		p.background(255);
-		if (allowTouchPCD_A == true) {
-			timerToAllowTouch++;
-			if (timerToAllowTouch >= seconds(10)) {
-				allowTouchPCD_A = false;
+		if (allowTouchPCD == true) {
+			timeToAllowTouch++;
+			if (timeToAllowTouch >= seconds(10)) {
+				allowTouchPCD = false;
 				PCDClient = "";
-				System.out.println("allowTouchPCD_A: " + allowTouchPCD_A);
+				System.out.println("allowTouchPCD_A: " + allowTouchPCD);
 				System.out.println("PCDClient: " + PCDClient);
-				
+
 			}
 		}
 
@@ -84,14 +113,15 @@ public class Logic implements Observer {
 				this.play(beep);
 
 			} else if (msn.contains("PC")) {
-				timerToAllowTouch = 0;
+				timeToAllowTouch = 0;
 
 				try {
-					if (allowTouchPCD_A == false) {
-						allowTouchPCD_A = Boolean.parseBoolean(msn.split("-")[1]);
+					if (allowTouchPCD == false) {
+						allowTouchPCD = Boolean.parseBoolean(msn.split("-")[1]);
 						PCDClient = msn.split("-")[2];
-						Server.getInstance(this, 5000).sendMoldelsAboutToTouch(PCDClient);
-						System.out.println("allowTouchPCD_A: " + allowTouchPCD_A);
+						Server.getInstance(this, 5000).confirmInteractionStop(
+								PCDClient);
+						System.out.println("allowTouchPCD: " + allowTouchPCD);
 						System.out.println("PCDClient: " + PCDClient);
 
 					} else {
@@ -99,32 +129,20 @@ public class Logic implements Observer {
 					}
 
 				} catch (ArrayIndexOutOfBoundsException e) {
-					this.allowTouchPCD_A = false;
+					this.allowTouchPCD = false;
 				}
 			}
 		}
 
 	}
 
-	public void keyPressed() {
-
-		Server.getInstance(this, 5000).sendFakeBeacon(p.key);
-		if (allowTouchPCD_A == true) {
-			for (int i = 0; i < fishKeys.length; i++) {
-				for (int j = 0; j < fishKeys[i].length; j++) {
-					if (p.key == fishKeys[i][j]) {
-						timerToAllowTouch = 0;
-						System.out.println("Fish: " + fishNames[i] + " Key touched: " + fishKeys[i][j]);
-						// Server.getInstance(this, 5000).verifyFish(i, j);
-						Server.getInstance(this, 5000).sendModelPartTouching(PCDClient, fishNames[i], fishKeys[i][j]);
-					}
-				}
-			}
-		}
-
-	}
+	// Change this code with digital GPIO pins
+	// public void keyPressed() {
+	// Server.getInstance(this, 5000).sendFakeBeacon(p.key);
+	// }
 
 	public void shotdown() {
+		gpio.shutdown();
 		System.out.println("ShotDown");
 		Server.getInstance(this, 5000).closeServer();
 	}

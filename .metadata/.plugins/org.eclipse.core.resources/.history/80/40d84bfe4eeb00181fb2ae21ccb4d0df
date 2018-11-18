@@ -1,0 +1,9 @@
+package server;
+
+public class Mfrc522 {
+	
+	public Mfrc522 (){
+		
+	}
+
+}
